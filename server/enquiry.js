@@ -1,5 +1,6 @@
 export const services = ['AI & agentic automation','Voice AI systems','Full-stack web development','RAG & document intelligence','Other / let’s discuss'];
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 export async function handleEnquiry(request,env,send=fetch){
  if(request.method!=='POST')return json({error:'Method not allowed'},405);
  const origin=request.headers.get('Origin');
@@ -59,6 +60,63 @@ export async function handleEnquiry(request,env,send=fetch){
       `Zarnex.ai`
     ].join('\n');
 
+    const clientHtml = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:24px 12px;background:#f5f5f3;font-family:-apple-system,BlinkMacSystemFont,'DM Sans','Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#191919;">
+  <div style="max-width:540px;margin:0 auto;background:#ffffff;border:1px solid #dededb;border-top:3px solid #ff5330;padding:32px 28px;">
+    <div style="font-family:'IBM Plex Mono',Menlo,Consolas,monospace;font-size:10px;letter-spacing:1.2px;color:#ff5330;margin-bottom:16px;">
+      ● 06 / FREELANCE ENQUIRY RECEIVED
+    </div>
+    <h2 style="margin:0 0 12px;font-size:22px;font-weight:600;letter-spacing:-0.5px;color:#191919;line-height:1.3;">
+      Thanks for reaching out, ${esc(name)}.
+    </h2>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#575757;">
+      I've received your project details and will review them personally. I’ll reply back within 24 hours to discuss the scope and next steps.
+    </p>
+
+    <div style="background:#fafaf9;border:1px solid #dededb;padding:20px;margin:24px 0;">
+      <div style="font-family:'IBM Plex Mono',Menlo,Consolas,monospace;font-size:9px;letter-spacing:1px;color:#707070;border-bottom:1px solid #e8e8e4;padding-bottom:10px;margin-bottom:14px;text-transform:uppercase;">
+        YOUR PROJECT SUMMARY
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;">
+        <tr>
+          <td style="padding:4px 0;color:#707070;width:90px;font-family:'IBM Plex Mono',monospace;font-size:10px;">SERVICE</td>
+          <td style="padding:4px 0;color:#ff5330;font-weight:600;">${esc(service)}</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;color:#707070;font-family:'IBM Plex Mono',monospace;font-size:10px;">COMPANY</td>
+          <td style="padding:4px 0;color:#191919;">${esc(company || 'Not provided')}</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;color:#707070;font-family:'IBM Plex Mono',monospace;font-size:10px;">BUDGET</td>
+          <td style="padding:4px 0;color:#191919;">${esc(budget || 'Let’s discuss')}</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;color:#707070;font-family:'IBM Plex Mono',monospace;font-size:10px;">TIMELINE</td>
+          <td style="padding:4px 0;color:#191919;">${esc(timeline || 'Flexible')}</td>
+        </tr>
+      </table>
+      <div style="border-top:1px solid #e8e8e4;padding-top:12px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:#707070;margin-bottom:6px;">MESSAGE / SCOPE</div>
+        <div style="font-size:13px;line-height:1.6;color:#333333;white-space:pre-wrap;">${esc(message)}</div>
+      </div>
+    </div>
+
+    <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#575757;">
+      If you have wireframes, docs, or extra questions in the meantime, simply reply directly to this email.
+    </p>
+
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #dededb;">
+      <div style="font-size:14px;font-weight:600;color:#191919;">Mohammed Aashiq</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#707070;margin-top:3px;">
+        AI & Full-Stack Engineering • <a href="https://zarnexai.in" style="color:#ff5330;text-decoration:none;">zarnexai.in</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
     await send('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -70,7 +128,8 @@ export async function handleEnquiry(request,env,send=fetch){
         to: [email],
         reply_to: 'aashiqmustak5969@gmail.com',
         subject: clientSubject,
-        text: clientText
+        text: clientText,
+        html: clientHtml
       }),
       signal: AbortSignal.timeout(12000)
     }).catch(err => {
