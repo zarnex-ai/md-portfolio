@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.openai/runtime/
+.env
+.env.*
+!.env.example
+.netlify/
+worker/assets.generated.js
