@@ -4,6 +4,10 @@ export async function POST(request) {
   return handleEnquiry(request, process.env);
 }
 
+export async function GET(request) {
+  return handleEnquiry(request, process.env);
+}
+
 export default async function handler(req, res) {
   if (!res && req instanceof Request) {
     return handleEnquiry(req, process.env);

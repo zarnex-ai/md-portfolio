@@ -3,10 +3,11 @@ const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:
 export async function handleEnquiry(request,env,send=fetch){
  if(request.method!=='POST')return json({error:'Method not allowed'},405);
  const origin=request.headers.get('Origin');
- const host=(request.headers.get('x-forwarded-host')?.split(',')[0]||request.headers.get('host'))?.trim();
- const proto=request.headers.get('x-forwarded-proto')||'https';
+ const rawHost=(request.headers.get('x-forwarded-host')?.split(',')[0]||request.headers.get('host'))?.trim();
+ const host=rawHost?.replace(/:(443|80)$/,'');
+ const proto=request.headers.get('x-forwarded-proto')||(origin?.startsWith('http://')?'http':'https');
  const expectedOrigin=host?`${proto}://${host}`:new URL(request.url).origin;
- if(origin && origin!==expectedOrigin && origin!==new URL(request.url).origin)return json({error:'Request origin not allowed'},403);
+ if(origin && origin!==expectedOrigin && origin!==`${proto}://${rawHost}` && origin!==new URL(request.url).origin)return json({error:'Request origin not allowed'},403);
  if(!request.headers.get('content-type')?.includes('application/json'))return json({error:'Expected JSON'},415);
  if(Number(request.headers.get('content-length'))>16000)return json({error:'Request too large'},413);
  let data;
@@ -19,9 +20,18 @@ export async function handleEnquiry(request,env,send=fetch){
  if(!env.RESEND_API_KEY||!env.RESEND_FROM_EMAIL)return json({error:'The enquiry form is not connected yet. Please email aashiqmustak5969@gmail.com directly.'},503);
  const text=[`New freelance service enquiry`,`Name: ${name}`,`Email: ${email}`,`Company: ${company||'Not provided'}`,`Service: ${service}`,`Budget: ${budget||'Not specified'}`,`Timeline: ${timeline||'Not specified'}`,'',message].join('\n');
  try{
-  const response=await send('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:['aashiqmustak5969@gmail.com'],reply_to:email,subject:`Freelance enquiry: ${service}`,text}),signal:AbortSignal.timeout(12000)});
-  if(!response.ok)return json({error:'Your request could not be sent. Please try again or email me directly.'},502);
+  const apiKey = env.RESEND_API_KEY.trim();
+  const fromEmail = env.RESEND_FROM_EMAIL.trim();
+  const response=await send('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:fromEmail,to:['aashiqmustak5969@gmail.com'],reply_to:email,subject:`Freelance enquiry: ${service}`,text}),signal:AbortSignal.timeout(12000)});
+  if(!response.ok){
+    const errText = await response.text().catch(()=>'');
+    console.error('Resend API error:', response.status, errText);
+    return json({error:'Your request could not be sent. Please try again or email me directly.'},502);
+  }
   const result=await response.json();if(!result.id)return json({error:'Email confirmation was not received. Please email me directly.'},502);
   return json({success:true});
- }catch{return json({error:'The email service is temporarily unavailable. Please try again or email me directly.'},502)}
+ }catch(err){
+  console.error('Enquiry error:', err);
+  return json({error:'The email service is temporarily unavailable. Please try again or email me directly.'},502)
+ }
 }
