@@ -17,11 +17,14 @@ export async function handleEnquiry(request,env,send=fetch){
  const field=(k,max)=>typeof data[k]==='string'&&data[k].trim().length<=max?data[k].trim():null;
  const name=field('name',100),email=field('email',254),service=field('service',100),message=field('message',5000),company=field('company',150),budget=field('budget',100),timeline=field('timeline',100);
  if(!name||/[\r\n]/.test(name)||!email||!/^\S+@[^\s@]+\.[^\s@]+$/.test(email)||!services.includes(service)||!message||message.length<20||company===null||budget===null||timeline===null)return json({error:'Please check your details and include at least 20 characters about your project.'},400);
- if(!env.RESEND_API_KEY||!env.RESEND_FROM_EMAIL)return json({error:'The enquiry form is not connected yet. Please email aashiqmustak5969@gmail.com directly.'},503);
+ if(!env.RESEND_API_KEY)return json({error:'The enquiry form is not connected yet. Please email aashiqmustak5969@gmail.com directly.'},503);
  const text=[`New freelance service enquiry`,`Name: ${name}`,`Email: ${email}`,`Company: ${company||'Not provided'}`,`Service: ${service}`,`Budget: ${budget||'Not specified'}`,`Timeline: ${timeline||'Not specified'}`,'',message].join('\n');
  try{
   const apiKey = env.RESEND_API_KEY.trim();
-  const fromEmail = env.RESEND_FROM_EMAIL.trim();
+  let fromEmail = (env.RESEND_FROM_EMAIL || 'Mohammed Aashiq <support@zarnexai.in>').trim();
+  if (fromEmail.includes('@gmail.com') || fromEmail === '') {
+    fromEmail = 'Mohammed Aashiq <support@zarnexai.in>';
+  }
   const response=await send('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:fromEmail,to:['aashiqmustak5969@gmail.com'],reply_to:email,subject:`Freelance enquiry: ${service}`,text}),signal:AbortSignal.timeout(12000)});
   if(!response.ok){
     const errText = await response.text().catch(()=>'');
