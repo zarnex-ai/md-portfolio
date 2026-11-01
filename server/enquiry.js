@@ -32,6 +32,54 @@ export async function handleEnquiry(request,env,send=fetch){
     return json({error:'Your request could not be sent. Please try again or email me directly.'},502);
   }
   const result=await response.json();if(!result.id)return json({error:'Email confirmation was not received. Please email me directly.'},502);
+
+  try {
+    const clientSubject = `Thanks for reaching out, ${name} | Mohammed Aashiq`;
+    const clientText = [
+      `Hi ${name},`,
+      '',
+      `Thank you for getting in touch through my portfolio website!`,
+      '',
+      `I've successfully received your project enquiry regarding "${service}". Here is a summary of the details you submitted:`,
+      '',
+      `• Service: ${service}`,
+      `• Company: ${company || 'Not provided'}`,
+      `• Budget: ${budget || 'Let’s discuss'}`,
+      `• Timeline: ${timeline || 'Flexible'}`,
+      '',
+      `Project Scope / Message:`,
+      message,
+      '',
+      `I review every project enquiry personally and will reply back to this email thread within 24 hours to discuss the next steps and technical details.`,
+      '',
+      `If you have any briefs, documents, or additional questions in the meantime, simply reply directly to this email.`,
+      '',
+      `Best regards,`,
+      `Mohammed Aashiq`,
+      `Zarnex.ai`
+    ].join('\n');
+
+    await send('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [email],
+        reply_to: 'aashiqmustak5969@gmail.com',
+        subject: clientSubject,
+        text: clientText
+      }),
+      signal: AbortSignal.timeout(12000)
+    }).catch(err => {
+      console.error('Client auto-reply failed:', err);
+    });
+  } catch (err) {
+    console.error('Client auto-reply error:', err);
+  }
+
   return json({success:true});
  }catch(err){
   console.error('Enquiry error:', err);
