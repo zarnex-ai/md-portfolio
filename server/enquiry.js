@@ -3,7 +3,10 @@ const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:
 export async function handleEnquiry(request,env,send=fetch){
  if(request.method!=='POST')return json({error:'Method not allowed'},405);
  const origin=request.headers.get('Origin');
- if(origin && origin!==new URL(request.url).origin)return json({error:'Request origin not allowed'},403);
+ const host=(request.headers.get('x-forwarded-host')?.split(',')[0]||request.headers.get('host'))?.trim();
+ const proto=request.headers.get('x-forwarded-proto')||'https';
+ const expectedOrigin=host?`${proto}://${host}`:new URL(request.url).origin;
+ if(origin && origin!==expectedOrigin && origin!==new URL(request.url).origin)return json({error:'Request origin not allowed'},403);
  if(!request.headers.get('content-type')?.includes('application/json'))return json({error:'Expected JSON'},415);
  if(Number(request.headers.get('content-length'))>16000)return json({error:'Request too large'},413);
  let data;

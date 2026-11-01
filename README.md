@@ -19,6 +19,25 @@ npm run dev
 
 Vite serves the frontend only. To test the email function locally, set server variables in `.env` (see `.env.example`) and run `npx netlify-cli dev` instead. Never commit `.env` or place the API key in a `VITE_` variable.
 
+## Deploy on Vercel with working email
+
+1. Push this repository to GitHub (or GitLab/Bitbucket).
+2. Go to [vercel.com](https://vercel.com) and click **"Add New..." > "Project"**.
+3. Import your repository:
+   - **Framework Preset**: Vite (detected automatically)
+   - **Root Directory**: `.` (or `aashiq-portfolio` if deployed from a monorepo root)
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Under **Environment Variables**, add:
+   - `RESEND_API_KEY`: your Resend API key (e.g. `re_...`)
+   - `RESEND_FROM_EMAIL`: your verified domain sender (e.g. `Portfolio <hello@your-verified-domain.com>`)
+5. Click **Deploy**. Vercel will build the frontend and deploy `/api/enquiry` as a serverless function automatically via `api/enquiry.js` and `vercel.json`.
+
+Alternatively, deploy using the Vercel CLI from this folder:
+```bash
+npx vercel
+```
+
 ## Deploy on Netlify with working email
 
 1. Upload this source folder to your Git repository and connect it to Netlify.
